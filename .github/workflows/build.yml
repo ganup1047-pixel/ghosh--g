@@ -1,0 +1,388 @@
+name: Build Ghosh g APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Generate Project Files
+        run: |
+          mkdir -p app/src/main/java/com/ghoshg/app
+          mkdir -p app/src/main/res/drawable
+          mkdir -p app/src/main/res/values
+
+          cat << 'EOF' > gradle.properties
+          org.gradle.jvmargs=-Xmx3072m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          android.nonTransitiveRClass=true
+          kotlin.code.style=official
+          EOF
+
+          cat << 'EOF' > settings.gradle.kts
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "Ghosh g"
+          include(":app")
+          EOF
+
+          cat << 'EOF' > build.gradle.kts
+          plugins {
+              id("com.android.application") version "8.7.2" apply false
+              id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+              id("org.jetbrains.kotlin.plugin.compose") version "2.0.21" apply false
+          }
+          EOF
+
+          cat << 'EOF' > app/build.gradle.kts
+          plugins {
+              id("com.android.application")
+              id("org.jetbrains.kotlin.android")
+              id("org.jetbrains.kotlin.plugin.compose")
+          }
+
+          android {
+              namespace = "com.ghoshg.app"
+              compileSdk = 35
+
+              defaultConfig {
+                  applicationId = "com.ghoshg.app"
+                  minSdk = 26
+                  targetSdk = 35
+                  versionCode = 1
+                  versionName = "1.0.0"
+              }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+
+              buildFeatures {
+                  compose = true
+              }
+          }
+
+          dependencies {
+              implementation("androidx.core:core-ktx:1.15.0")
+              implementation("androidx.core:core-splashscreen:1.0.1")
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+              implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+              implementation("androidx.activity:activity-compose:1.9.3")
+
+              val composeBom = platform("androidx.compose:compose-bom:2024.11.00")
+              implementation(composeBom)
+              implementation("androidx.compose.ui:ui")
+              implementation("androidx.compose.ui:ui-graphics")
+              implementation("androidx.compose.material3:material3")
+              implementation("androidx.compose.material:material-icons-extended")
+
+              implementation("androidx.navigation:navigation-compose:2.8.4")
+              implementation("androidx.datastore:datastore-preferences:1.1.1")
+          }
+          EOF
+
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:allowBackup="false"
+                  android:icon="@drawable/ic_ghosh_g_logo"
+                  android:roundIcon="@drawable/ic_ghosh_g_logo"
+                  android:label="Ghosh g"
+                  android:supportsRtl="true"
+                  android:theme="@style/Theme.GhoshG.Starting">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:resizeableActivity="true"
+                      android:windowSoftInputMode="adjustResize">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/values/themes.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="Theme.GhoshG.Starting" parent="Theme.SplashScreen">
+                  <item name="windowSplashScreenBackground">#FF1E1B4B</item>
+                  <item name="windowSplashScreenAnimatedIcon">@drawable/ic_ghosh_g_logo</item>
+                  <item name="postSplashScreenTheme">@style/Theme.GhoshG</item>
+              </style>
+              <style name="Theme.GhoshG" parent="android:Theme.Material.NoActionBar" />
+          </resources>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_ghosh_g_logo.xml
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:aapt="http://schemas.android.com/aapt"
+              android:width="108dp"
+              android:height="108dp"
+              android:viewportWidth="108"
+              android:viewportHeight="108">
+              <path android:pathData="M54,54m-46,0a46,46 0,1 1,92 0a46,46 0,1 1,-92 0">
+                  <aapt:attr name="android:fillColor">
+                      <gradient android:startX="16" android:startY="16" android:endX="92" android:endY="92" android:type="linear">
+                          <item android:offset="0.0" android:color="#FF4F46E5" />
+                          <item android:offset="0.5" android:color="#FF7C3AED" />
+                          <item android:offset="1.0" android:color="#FFEC4899" />
+                      </gradient>
+                  </aapt:attr>
+              </path>
+              <path
+                  android:fillColor="#FFFFFFFF"
+                  android:pathData="M54,28C39.64,28 28,39.64 28,54C28,68.36 39.64,80 54,80C66.82,80 77.45,70.72 79.6,58.5H54V50.5H80V54C80,70.57 68.57,82 54,82C38.54,82 26,69.46 26,54C26,38.54 38.54,26 54,26C61.42,26 68.16,28.89 73.18,33.62L67.52,39.28C63.94,35.98 59.2,34 54,34V28Z" />
+              <path
+                  android:fillColor="#FFFBBF24"
+                  android:pathData="M71,36m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/java/com/ghoshg/app/MainActivity.kt
+          package com.ghoshg.app
+
+          import android.content.Context
+          import android.os.Bundle
+          import android.view.WindowManager
+          import androidx.activity.ComponentActivity
+          import androidx.activity.compose.setContent
+          import androidx.activity.enableEdgeToEdge
+          import androidx.compose.foundation.background
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.isSystemInDarkTheme
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.lazy.LazyColumn
+          import androidx.compose.foundation.lazy.LazyRow
+          import androidx.compose.foundation.lazy.items
+          import androidx.compose.foundation.rememberScrollState
+          import androidx.compose.foundation.shape.CircleShape
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.foundation.verticalScroll
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+          import androidx.compose.material.icons.outlined.*
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.runtime.saveable.rememberSaveable
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.draw.clip
+          import androidx.compose.ui.graphics.Brush
+          import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.graphics.vector.ImageVector
+          import androidx.compose.ui.text.font.FontWeight
+          import androidx.compose.ui.text.style.TextOverflow
+          import androidx.compose.ui.unit.dp
+          import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+          import androidx.datastore.preferences.core.booleanPreferencesKey
+          import androidx.datastore.preferences.core.edit
+          import androidx.datastore.preferences.core.stringPreferencesKey
+          import androidx.datastore.preferences.preferencesDataStore
+          import androidx.lifecycle.compose.collectAsStateWithLifecycle
+          import androidx.lifecycle.lifecycleScope
+          import androidx.navigation.NavType
+          import androidx.navigation.compose.NavHost
+          import androidx.navigation.compose.composable
+          import androidx.navigation.compose.rememberNavController
+          import androidx.navigation.navArgument
+          import kotlinx.coroutines.flow.SharingStarted
+          import kotlinx.coroutines.flow.map
+          import kotlinx.coroutines.flow.stateIn
+          import kotlinx.coroutines.launch
+          import java.time.LocalTime
+
+          val Context.dataStore by preferencesDataStore(name = "ghosh_g_prefs")
+
+          enum class AppThemeMode(val label: String) {
+              LIGHT_BRIGHT("Light / Bright"),
+              DARK("Dark"),
+              SYSTEM("System")
+          }
+
+          data class UserPrefs(
+              val firstName: String = "",
+              val onboarded: Boolean = false,
+              val themeMode: AppThemeMode = AppThemeMode.LIGHT_BRIGHT,
+              val appLockEnabled: Boolean = false
+          ) {
+              val identity: String
+                  get() = if (firstName.isBlank()) "Ghosh g" else "${firstName.trim()} Ghosh g"
+          }
+
+          enum class ShortcutCategory(val id: String, val label: String, val icon: ImageVector, val color: Color) {
+              NOTE_PDF("note_pdf", "Note PDF", Icons.Outlined.PictureAsPdf, Color(0xFFE11D48)),
+              CLASS_NOTES("class_notes", "Class Notes", Icons.Outlined.MenuBook, Color(0xFF4F46E5)),
+              PHOTO("photo", "Photo", Icons.Outlined.PhotoLibrary, Color(0xFF059669)),
+              VIDEO("video", "Video", Icons.Outlined.VideoLibrary, Color(0xFFD97706)),
+              IMPORTANT("important", "Important", Icons.Outlined.StarOutline, Color(0xFF9333EA)),
+              EXAM("exam", "Exam", Icons.Outlined.School, Color(0xFF0284C7))
+          }
+
+          data class CategoryItem(val id: Long, val category: ShortcutCategory, val title: String, val details: String, val time: String)
+          data class ModuleItem(val number: Int, val title: String, val subtitle: String, val icon: ImageVector, val color: Color)
+
+          val all27Modules = listOf(
+              ModuleItem(2, "Notes & Painting", "Unicode notes, PDF export & PNG drawing canvas", Icons.Outlined.EditNote, Color(0xFF4F46E5)),
+              ModuleItem(3, "Task Manager", "To-dos, overdue badges & custom sound alarms", Icons.Outlined.CheckCircle, Color(0xFF059669)),
+              ModuleItem(4, "Calculator & Age", "Precision math parser & exact age calculator", Icons.Outlined.Calculate, Color(0xFF0284C7)),
+              ModuleItem(5, "Special Date Reminders", "Birthdays, exams & annual notifications", Icons.Outlined.Event, Color(0xFFDB2777)),
+              ModuleItem(6, "Private Diary", "SQLCipher AES-256 encrypted personal diary", Icons.Outlined.Lock, Color(0xFF9333EA)),
+              ModuleItem(7, "Private Files", "SAF file import into app-private vault", Icons.Outlined.FolderShared, Color(0xFF4338CA)),
+              ModuleItem(8, "Shortcuts & Categories", "Note PDF, Class Notes, Photo, Video, Important & Exam", Icons.Outlined.Category, Color(0xFF0D9488)),
+              ModuleItem(9, "Camera with Location", "Photo capture with date, time & GPS overlay", Icons.Outlined.PhotoCamera, Color(0xFF059669)),
+              ModuleItem(10, "Gallery Location Editor", "Add visible location stamps to existing photos", Icons.Outlined.EditLocationAlt, Color(0xFF0284C7)),
+              ModuleItem(11, "Saved Location Manager", "Manage persistent location labels", Icons.Outlined.MyLocation, Color(0xFF0D9488)),
+              ModuleItem(12, "Guided Panorama Camera", "Sensor-guided wide panorama capture", Icons.Outlined.PanoramaPhotosphere, Color(0xFF6366F1)),
+              ModuleItem(13, "Snake Game", "Playable classic arcade game with swipe & D-pad", Icons.Outlined.SportsEsports, Color(0xFF10B981)),
+              ModuleItem(14, "Split-Screen Mode", "Native multi-window adaptive layout support", Icons.Outlined.VerticalSplit, Color(0xFF64748B)),
+              ModuleItem(15, "App Lock & Login", "BiometricPrompt & secure PIN authentication", Icons.Outlined.Fingerprint, Color(0xFFDC2626)),
+              ModuleItem(16, "Settings & Theme Changer", "Light/Bright & Dark themes, identity & privacy", Icons.Outlined.Settings, Color(0xFF475569)),
+              ModuleItem(17, "Full App Lock Toggle", "Lifecycle lock & screenshot protection", Icons.Outlined.Security, Color(0xFFBE123C)),
+              ModuleItem(18, "Routine Planner", "Daily recurring schedules & reminders", Icons.Outlined.Schedule, Color(0xFF7C3AED)),
+              ModuleItem(19, "Multicolour Edge Lighting", "Animated ambient gradient border themes", Icons.Outlined.LightMode, Color(0xFFEC4899)),
+              ModuleItem(20, "Selfie Ring Light", "Front camera with adjustable screen illumination", Icons.Outlined.WbSunny, Color(0xFFF59E0B)),
+              ModuleItem(21, "Important Documents", "Identity, School & Certificate PDF organiser", Icons.Outlined.Description, Color(0xFFB45309)),
+              ModuleItem(22, "Wallpaper Collection", "Grid gallery & system wallpaper setter", Icons.Outlined.Wallpaper, Color(0xFF8B5CF6)),
+              ModuleItem(23, "GPS Speedometer", "Filtered live km/h & mph speed gauge", Icons.Outlined.Speed, Color(0xFFEF4444)),
+              ModuleItem(24, "Charging Animation", "Live battery state & charging visual themes", Icons.Outlined.BatteryChargingFull, Color(0xFF22C55E)),
+              ModuleItem(25, "Harmony & Piano", "Playable multi-touch synthesized piano keyboard", Icons.Outlined.Piano, Color(0xFF3B82F6)),
+              ModuleItem(26, "Music Visualizer", "Real-time audio spectrum & waveform themes", Icons.Outlined.GraphicEq, Color(0xFFA855F7)),
+              ModuleItem(27, "Personalised Identity", "Customise your '[First Name] Ghosh g' identity", Icons.Outlined.Badge, Color(0xFF4F46E5))
+          )
+
+          class MainActivity : ComponentActivity() {
+              private val NAME_KEY = stringPreferencesKey("first_name")
+              private val ONBOARD_KEY = booleanPreferencesKey("onboarded")
+              private val THEME_KEY = stringPreferencesKey("theme_mode")
+              private val LOCK_KEY = booleanPreferencesKey("app_lock")
+
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  val splash = installSplashScreen()
+                  super.onCreate(savedInstanceState)
+                  enableEdgeToEdge()
+
+                  val prefsFlow = applicationContext.dataStore.data.map { p ->
+                      val theme = runCatching { AppThemeMode.valueOf(p[THEME_KEY] ?: "LIGHT_BRIGHT") }
+                          .getOrDefault(AppThemeMode.LIGHT_BRIGHT)
+                      UserPrefs(
+                          firstName = p[NAME_KEY] ?: "",
+                          onboarded = p[ONBOARD_KEY] ?: false,
+                          themeMode = theme,
+                          appLockEnabled = p[LOCK_KEY] ?: false
+                      )
+                  }.stateIn(lifecycleScope, SharingStarted.Eagerly, null)
+
+                  splash.setKeepOnScreenCondition { prefsFlow.value == null }
+
+                  setContent {
+                      val prefs by prefsFlow.collectAsStateWithLifecycle()
+                      val current = prefs ?: return@setContent
+
+                      LaunchedEffect(current.appLockEnabled) {
+                          if (current.appLockEnabled) {
+                              window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
+                          } else {
+                              window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                          }
+                      }
+
+                      val isDark = when (current.themeMode) {
+                          AppThemeMode.LIGHT_BRIGHT -> false
+                          AppThemeMode.DARK -> true
+                          AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+                      }
+
+                      MaterialTheme(
+                          colorScheme = if (isDark) darkColorScheme(
+                              primary = Color(0xFF818CF8),
+                              secondary = Color(0xFFC084FC),
+                              background = Color(0xFF0B0F19),
+                              surface = Color(0xFF111827)
+                          ) else lightColorScheme(
+                              primary = Color(0xFF4338CA),
+                              secondary = Color(0xFF9333EA),
+                              background = Color(0xFFF8FAFC),
+                              surface = Color(0xFFFFFFFF)
+                          )
+                      ) {
+                          GhoshGApp(
+                              prefs = current,
+                              onSaveName = { name ->
+                                  lifecycleScope.launch {
+                                      applicationContext.dataStore.edit {
+                                          it[NAME_KEY] = name.trim()
+                                          it[ONBOARD_KEY] = true
+                                      }
+                                  }
+                              },
+                              onSaveTheme = { mode ->
+                                  lifecycleScope.launch {
+                                      applicationContext.dataStore.edit { it[THEME_KEY] = mode.name }
+                                  }
+                              },
+                              onToggleLock = { enabled ->
+                                  lifecycleScope.launch {
+                                      applicationContext.dataStore.edit { it[LOCK_KEY] = enabled }
+                                  }
+                              }
+                          )
+                      }
+                  }
+              }
+          }
+
+          @OptIn(ExperimentalMaterial3Api::class)
+          @Composable
+          fun GhoshGApp(
+              prefs: UserPrefs,
+              onSaveName: (String) -> Unit,
+              onSaveTheme: (AppThemeMode) -> Unit,
+              onToggleLock: (Boolean) -> Unit
+          ) {
+              val navController = rememberNavController()
+              val categoryItems = remember {
+                  mutableStateListOf(
+                      CategoryItem(1L, ShortcutCategory.CLASS_NOTES, "Skill Competition Notes", "MVVM + Jetpack Compose architecture", "Today"),
+                      CategoryItem(2L, ShortcutCategory.IMPORTANT, "Project Submission", "All 27 modules catalogued", "Today")
+                  )
+              }
+
+              NavHost(
+                  navController = navController,
+                  startDestination = if (prefs.onboarded) "dashboard" else "onboarding"
+              ) {
+                  composable("onboarding") {
+                      var input by reme
